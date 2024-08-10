@@ -1,0 +1,4 @@
+app/api/__pycache__
+app/db/__pycache__
+app/styles/__pycache__
+app/utils/__pycache__
