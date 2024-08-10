@@ -1,18 +1,16 @@
 import json
+import os
 from googleapiclient.discovery import build
 
+API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-# Replace with your API key
-API_KEY = 'AI'
 
-# Create a service object
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
 def get_channel_details(channel_id):
     channel_data = {}
 
     try:
-
         # fetch the channel details
         request = youtube.channels().list(
             part='snippet,contentDetails,statistics,topicDetails,status,brandingSettings',
@@ -33,8 +31,6 @@ def get_channel_details(channel_id):
         channel_data["channel_details"] = channel_details
 
         uploads_playlist_id = channel_info['contentDetails']['relatedPlaylists']['uploads']
-
-        print("uploads_playlist_id-----------------------------------",uploads_playlist_id)
 
         request = youtube.playlists().list(
             part='snippet',

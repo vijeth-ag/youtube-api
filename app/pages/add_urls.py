@@ -8,8 +8,7 @@ from db.tables import insert_channel_details, insert_playlists_data, insert_vide
 
 # Set the page configuration
 st.set_page_config(
-    # page_title="YouTube Channel Data Analysis",
-    page_title="https://www.youtube.com/channel/UCZyPBsSCVAFDm_rJwdXORcQ",
+    page_title="YouTube Channel Data Analysis",
     layout="wide"
 )
 
@@ -25,10 +24,11 @@ def add_channel():
     if "https://www." in entered_url:
         entered_url = entered_url.replace("https://www.","")
 
-    print("entered_url",entered_url)
     if is_valid_youtube_channel_url(entered_url):
-        if len(st.session_state.channels) < 10:
-            st.session_state.channels.append(entered_url)
+        if len(st.session_state.channels) < 10:            
+            st.session_state.channels[len(st.session_state.channels)-1] = entered_url
+
+            st.session_state.channels.append("")
     else:
         st.toast("Please enter a valid Youtube channel url", icon="❌")
         time.sleep(3)
@@ -44,7 +44,6 @@ def process_channels():
         channel_id = get_channelid_from_url(channel)
         st.write(channel_id)
         channel_all_data = get_channel_details(channel_id)
-        # print("chan_detchan_detchan_det========",json.dumps(channel_all_data, indent=4))
         insert_channel_details(channel_all_data["channel_details"])
         insert_playlists_data(channel_all_data["playlists_data"])
         insert_videos_data(channel_all_data["videos"])
@@ -52,9 +51,6 @@ def process_channels():
 
 
 
-st.write("https://www.youtube.com/channel/UCZyPBsSCVAFDm_rJwdXORcQ")
-
-st.write("https://www.youtube.com/channel/UCRF8RHkTQ5nEVtMy_VNQMiw")
 
 # Display the input boxes for channels
 for i, channel in enumerate(st.session_state.channels):

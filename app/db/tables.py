@@ -25,7 +25,7 @@ class Channel(Base):
     channel_name = Column("channel_name", VARCHAR(255))
     channel_type = Column("channel_type", VARCHAR(255))
     channel_views = Column("channel_views", Integer)
-    channel_desc = Column("channel_desc", String(300))
+    channel_desc = Column("channel_desc", String(5000))
     channel_status = Column("channel_status", VARCHAR(255))
 
 
@@ -60,7 +60,7 @@ class Video(Base):
     video_id = Column("video_id", VARCHAR(255), primary_key=True)
     playlist_id = Column("playlist_id", VARCHAR(255), ForeignKey("Playlist.playlist_id"))
     video_name = Column("video_name", VARCHAR(255))
-    video_desc = Column("video_desc", String(500))
+    video_desc = Column("video_desc", String(5000))
     published_date = Column("published_date", DATETIME)
    
     view_count = Column("view_count", Integer)
@@ -292,4 +292,5 @@ def iso8601_duration_to_seconds(duration):
     return total_seconds
 
 def delete_all_tables():
+    print("dropping tables")
     Base.metadata.drop_all(bind=engine)
