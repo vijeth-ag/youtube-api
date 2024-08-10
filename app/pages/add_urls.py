@@ -44,11 +44,11 @@ def process_channels():
         channel_id = get_channelid_from_url(channel)
         st.write(channel_id)
         channel_all_data = get_channel_details(channel_id)
-        print("chan_detchan_detchan_det========",json.dumps(channel_all_data, indent=4))
-        # insert_channel_details(channel_all_data["channel_details"])
-        # insert_playlists_data(channel_all_data["playlists_data"])
-        # insert_videos_data(channel_all_data["videos"])
-        # insert_comments_data(channel_all_data["comments_data"])
+        # print("chan_detchan_detchan_det========",json.dumps(channel_all_data, indent=4))
+        insert_channel_details(channel_all_data["channel_details"])
+        insert_playlists_data(channel_all_data["playlists_data"])
+        insert_videos_data(channel_all_data["videos"])
+        insert_comments_data(channel_all_data["comment_data"])
 
 
 

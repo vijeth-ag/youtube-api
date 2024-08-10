@@ -3,7 +3,7 @@ from googleapiclient.discovery import build
 
 
 # Replace with your API key
-API_KEY = 'AIz'
+API_KEY = 'AI'
 
 # Create a service object
 youtube = build('youtube', 'v3', developerKey=API_KEY)
@@ -34,6 +34,8 @@ def get_channel_details(channel_id):
 
         uploads_playlist_id = channel_info['contentDetails']['relatedPlaylists']['uploads']
 
+        print("uploads_playlist_id-----------------------------------",uploads_playlist_id)
+
         request = youtube.playlists().list(
             part='snippet',
             channelId=channel_id,
@@ -42,8 +44,17 @@ def get_channel_details(channel_id):
         response = request.execute()
 
         playlists_data = response.get('items', [])
-        channel_data["playlists_data"] = playlists_data
+        upload_playlist_data = {
+            'id': uploads_playlist_id,
+            'snippet': {
+                'channelId': channel_id,
+                'title': 'Uploads'                
+            }
+        }
 
+        playlists_data.append(upload_playlist_data)
+
+        channel_data["playlists_data"] = playlists_data
 
         # Fetch videos from the uploads playlist
         request = youtube.playlistItems().list(
@@ -57,6 +68,16 @@ def get_channel_details(channel_id):
 
         for video in response_data:
             video_id = video['snippet']['resourceId']['videoId']
+            video_details_request = youtube.videos().list(
+                part='statistics,contentDetails',
+                id=video_id
+            )
+            video_details_response = video_details_request.execute()
+            video_details = video_details_response.get('items', [])[0]
+            video["statistics"] = video_details['statistics']
+            video["contentDetails"] = video_details['contentDetails']
+
+
             comment_request = youtube.commentThreads().list(
                 part='snippet',
                 videoId=video_id,

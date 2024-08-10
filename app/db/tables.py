@@ -1,4 +1,11 @@
+from datetime import datetime
 import pymysql
+import re
+import pandas as pd
+
+from sqlalchemy import func, extract
+
+
 pymysql.install_as_MySQLdb()
 
 from sqlalchemy import create_engine, ForeignKey, Column, Integer, VARCHAR, String, DATETIME
@@ -58,14 +65,13 @@ class Video(Base):
    
     view_count = Column("view_count", Integer)
     like_count = Column("like_count", Integer)
-    dislike_count = Column("dislike_count", Integer)
     favorite_count = Column("favorite_count", Integer)
     comment_count = Column("comment_count", Integer)
-    duration = Column("duration",  Integer)
+    duration = Column("duration",  VARCHAR(255))
     thumbnail = Column("thumbnail", VARCHAR(255))
     caption_status = Column("caption_status", VARCHAR(255))
 
-    def __init__(self, video_id, playlist_id, video_name, video_desc, published_date, view_count, like_count, dislike_count, favorite_count, comment_count, duration, thumbnail, caption_status):
+    def __init__(self, video_id, playlist_id, video_name, video_desc, published_date, view_count, like_count, favorite_count, comment_count, duration, thumbnail, caption_status):
         self.video_id = video_id
         self.playlist_id = playlist_id
         self.video_name = video_name
@@ -73,7 +79,6 @@ class Video(Base):
         self.published_date = published_date
         self.view_count = view_count
         self.like_count = like_count
-        self.dislike_count = dislike_count
         self.favorite_count = favorite_count
         self.comment_count = comment_count
         self.duration = duration
@@ -111,26 +116,180 @@ def insert_channel_details(channel_details):
     
 def insert_playlists_data(playlists_data):
     for playlist in playlists_data:
+        print("playlist------------------",playlist)
+
         playlist = Playlist(playlist['id'], playlist['snippet']['channelId'], playlist['snippet']['title'])
         session.add(playlist)
     session.commit()
 
 def insert_videos_data(videos_data):
     for video in videos_data:
-        video = Video(video['snippet']['resourceId']['videoId'], video['snippet']['playlistId'], video['snippet']['title'], video['snippet']['video_description'], \
-                    video['snippet']['publishedAt'], video['view_count'], video['like_count'], \
-                    video['dislike_count'], video['favorite_count'], video['comment_count'], \
-                    video['duration'], video['thumbnail'], video['caption_status'])    
+        sql_datetime_str = video['snippet']['publishedAt'].replace('T', ' ').replace('Z', '')
+        parsed_datetime = datetime.strptime(sql_datetime_str, '%Y-%m-%d %H:%M:%S')
+
+        video = Video(video['snippet']['resourceId']['videoId'], video['snippet']['playlistId'], video['snippet']['title'], \
+                    video['snippet']['description'], \
+                    parsed_datetime, video['statistics']['viewCount'], video['statistics']['likeCount'], \
+                    video['statistics']['favoriteCount'], video['statistics']['commentCount'], \
+                    video['contentDetails']['duration'], video['snippet']['thumbnails']['default']['url'], video['contentDetails']['caption'])    
         session.add(video)
     session.commit()
 
 def insert_comments_data(comments_data):
     for comment in comments_data:
-        comment = Comment(comment['comment_id'], comment['video_id'], comment['comment_text'], \
-                        comment['comment_author'], comment['comment_published_date'])
+        comment_published_date = datetime.strptime(comment['snippet']['topLevelComment']['snippet']['publishedAt'].replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S')
+
+        comment = Comment(comment['id'], comment['snippet']['videoId'], comment['snippet']['topLevelComment']['snippet']['textOriginal'], \
+                        comment['snippet']['topLevelComment']['snippet']['authorDisplayName'], comment_published_date)
         session.add(comment)
     session.commit()
 
+
+
+# Queryies
+def get_vidoos_and_channel():
+    results = session.query(Video.video_name, Channel.channel_name)\
+    .join(Playlist, Video.playlist_id == Playlist.playlist_id)\
+    .join(Channel, Playlist.channel_id == Channel.channel_id)\
+    .all()
+
+    return results
+
+def most_videos():
+    results = session.query(Channel.channel_name, func.count(Video.video_id).label('video_count'))\
+        .join(Playlist, Channel.channel_id == Playlist.channel_id)\
+        .join(Video, Playlist.playlist_id == Video.playlist_id)\
+        .group_by(Channel.channel_id)\
+        .order_by(func.count(Video.video_id).desc())\
+        .all()
+    return results
+
+
+def top_10():
+    results = session.query(
+        Video.video_name,
+        Channel.channel_name,
+        Video.view_count
+    ).join(
+        Playlist, Video.playlist_id == Playlist.playlist_id
+    ).join(
+        Channel, Playlist.channel_id == Channel.channel_id
+    ).order_by(
+        Video.view_count.desc()
+    ).limit(10).all()
+    return results
+
+def comments_video_names():
+    results = session.query(
+        Video.video_name,
+        func.count(Comment.comment_id).label('comment_count')
+    ).outerjoin(
+        Comment, Video.video_id == Comment.video_id
+    ).group_by(
+        Video.video_id
+    ).all()
+    return results
+
+
+def highest_likes():
+    results = session.query(
+        Video.video_name,
+        Channel.channel_name,
+        Video.like_count
+    ).join(
+        Playlist, Video.playlist_id == Playlist.playlist_id
+    ).join(
+        Channel, Playlist.channel_id == Channel.channel_id
+    ).order_by(
+        Video.like_count.desc()
+    ).all()
+
+    return results
+
+def total_likes():
+    results = session.query(
+        Video.video_name,
+        Video.like_count
+    ).all()
+    return results
+
+
+def total_views_channel_names():
+    results = session.query(
+        Channel.channel_name,
+        func.sum(Video.view_count).label('total_views')
+    ).join(
+        Playlist, Channel.channel_id == Playlist.channel_id
+    ).join(
+        Video, Playlist.playlist_id == Video.playlist_id
+    ).group_by(
+        Channel.channel_id
+    ).all()
+    return results
+
+def videos_2022():
+    results = session.query(
+        Channel.channel_name
+    ).join(
+        Playlist, Channel.channel_id == Playlist.channel_id
+    ).join(
+        Video, Playlist.playlist_id == Video.playlist_id
+    ).filter(
+        extract('year', Video.published_date) == 2022
+    ).distinct().all()
+    return results
+
+def avg_duration():
+    results = session.query(
+        Channel.channel_name,
+        Video.duration
+    ).join(
+        Playlist, Video.playlist_id == Playlist.playlist_id
+    ).join(
+        Channel, Playlist.channel_id == Channel.channel_id
+    ).all()
+
+    data = [(channel_name, iso8601_duration_to_seconds(duration)) for channel_name, duration in results]
+    df = pd.DataFrame(data, columns=['channel_name', 'duration_seconds'])
+
+    # Calculate average duration per channel
+    average_durations = df.groupby('channel_name')['duration_seconds'].mean().reset_index()
+    average_durations['average_duration'] = pd.to_timedelta(average_durations['duration_seconds'], unit='s')
+
+    return average_durations
+
+def highest_comments_channel_name():
+    results = session.query(
+        Video.video_name,
+        Channel.channel_name,
+        func.count(Comment.comment_id).label('comment_count')
+    ).join(
+        Playlist, Video.playlist_id == Playlist.playlist_id
+    ).join(
+        Channel, Playlist.channel_id == Channel.channel_id
+    ).outerjoin(
+        Comment, Video.video_id == Comment.video_id
+    ).group_by(
+        Video.video_id,
+        Channel.channel_name
+    ).order_by(
+        func.count(Comment.comment_id).desc()
+    ).all()
+
+    return results
+
+
+def iso8601_duration_to_seconds(duration):
+    matches = re.findall(r'(\d+)([HMSS])', duration)
+    total_seconds = 0
+    for value, unit in matches:
+        if unit == 'H':
+            total_seconds += int(value) * 3600
+        elif unit == 'M':
+            total_seconds += int(value) * 60
+        elif unit == 'S':
+            total_seconds += int(value)
+    return total_seconds
 
 def delete_all_tables():
     Base.metadata.drop_all(bind=engine)
