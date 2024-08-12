@@ -44,6 +44,7 @@ def process_channels():
         channel_id = get_channelid_from_url(channel)
         st.write(channel_id)
         channel_all_data = get_channel_details(channel_id)
+
         insert_channel_details(channel_all_data["channel_details"])
         insert_playlists_data(channel_all_data["playlists_data"])
         insert_videos_data(channel_all_data["videos"])

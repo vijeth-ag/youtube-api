@@ -8,12 +8,13 @@ from sqlalchemy import func, extract
 
 pymysql.install_as_MySQLdb()
 
-from sqlalchemy import create_engine, ForeignKey, Column, Integer, VARCHAR, String, DATETIME
+from sqlalchemy import create_engine, ForeignKey, Column, Integer, VARCHAR, String, DATETIME, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
+# engine = create_engine("mysql+pymysql://user:password@db:3306/youtube_api_db", echo=True)
 engine = create_engine("mysql+pymysql://user:password@127.0.0.1:3306/youtube_api_db", echo=True)
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -24,7 +25,7 @@ class Channel(Base):
     channel_id = Column("channel_id", VARCHAR(255), primary_key=True)
     channel_name = Column("channel_name", VARCHAR(255))
     channel_type = Column("channel_type", VARCHAR(255))
-    channel_views = Column("channel_views", Integer)
+    channel_views = Column("channel_views", BigInteger)
     channel_desc = Column("channel_desc", String(5000))
     channel_status = Column("channel_status", VARCHAR(255))
 
@@ -116,7 +117,6 @@ def insert_channel_details(channel_details):
     
 def insert_playlists_data(playlists_data):
     for playlist in playlists_data:
-        print("playlist------------------",playlist)
 
         playlist = Playlist(playlist['id'], playlist['snippet']['channelId'], playlist['snippet']['title'])
         session.add(playlist)

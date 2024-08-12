@@ -26,16 +26,4 @@ def is_valid_youtube_channel_url(url):
 def get_channelid_from_url(url):
     tokens = url.split("/")
 
-    print("tokens",tokens)
-    print("tokens len",len(tokens)-1)
     return tokens[len(tokens)-1]
-
-
-    # if "youtube.com/channel" in url:
-    #     print("youtube.com/channel type")        
-    # elif "youtube.com/c" in url:
-    #     print("youtube.com/c type")
-    # elif "youtube.com/@" in url:
-    #     print("youtube.com/c type")
-    # elif "youtube.com/user" in url:
-    #     print("youtube.com/c type")        

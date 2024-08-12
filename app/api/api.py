@@ -1,9 +1,9 @@
 import json
 import os
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 API_KEY = os.getenv('YOUTUBE_API_KEY')
-
 
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
@@ -70,16 +70,26 @@ def get_channel_details(channel_id):
             )
             video_details_response = video_details_request.execute()
             video_details = video_details_response.get('items', [])[0]
+            print("video_details['statistics'__________________________",video_details['statistics'])
+
+
+            # if  video_details['statistics']['commentCount'] is null or not exists assign 0
+            if 'commentCount' not in video_details['statistics']:
+                video_details['statistics']['commentCount'] = 0
+
+
             video["statistics"] = video_details['statistics']
             video["contentDetails"] = video_details['contentDetails']
 
 
-            comment_request = youtube.commentThreads().list(
-                part='snippet',
-                videoId=video_id,
-                maxResults=50  # Number of comments to retrieve, can be adjusted
-            )
-            comment_response = comment_request.execute()
+            # comment_request = youtube.commentThreads().list(
+            #     part='snippet',
+            #     videoId=video_id,
+            #     maxResults=50  # Number of comments to retrieve, can be adjusted
+            # )
+            # comment_response = comment_request.execute()
+            comment_response = get_comments(video_id)
+
             comment_data = comment_response.get('items', [])
             channel_data["comment_data"] = comment_data
 
@@ -89,3 +99,68 @@ def get_channel_details(channel_id):
         print(f"An error occurred: {e}")
         return None
 
+
+def get_comments(video_id):
+    try:
+        # Make the request to the YouTube API
+        comment_request = youtube.commentThreads().list(
+            part='snippet',
+            videoId=video_id,
+            maxResults=50  # Number of comments to retrieve, can be adjusted
+        )
+        response = comment_request.execute()
+        return response
+
+    except HttpError as error:
+        error_content = error.content.decode('utf-8')
+        
+        # Check if comments are disabled for the video
+        if 'commentsDisabled' in error_content:
+            print("The comments for this video are disabled.")
+            return {
+                "items": [empty_comment_thread]
+            }
+
+        else:
+            # Handle other types of errors
+            print(f"An error occurred: {error}")
+            # return None  # or handle accordingly
+            return {
+                "items": [empty_comment_thread]
+            }
+
+
+empty_comment_thread = {
+    "kind": "",
+    "etag": "",
+    "id": "",
+    "snippet": {
+        "channelId": "",
+        "videoId": "",
+        "topLevelComment": {
+            "kind": "",
+            "etag": "",
+            "id": "",
+            "snippet": {
+                "channelId": "",
+                "videoId": "",
+                "textDisplay": "",
+                "textOriginal": "",
+                "authorDisplayName": "",
+                "authorProfileImageUrl": "",
+                "authorChannelUrl": "",
+                "authorChannelId": {
+                    "value": ""
+                },
+                "canRate": False,
+                "viewerRating": "",
+                "likeCount": 0,
+                "publishedAt": "",
+                "updatedAt": ""
+            }
+        },
+        "canReply": False,
+        "totalReplyCount": 0,
+        "isPublic": False
+    }
+}
