@@ -67,5 +67,5 @@ if len(st.session_state.channels) < 10:
     st.button("Add Another Channel", on_click=add_channel)
 
 # Process button at the bottom
-st.button("Process", on_click=process_channels)
-st.button("DROP_ALL", on_click=delete_all_tables)
+st.button("Process channels", on_click=process_channels)
+# st.button("DROP_ALL", on_click=delete_all_tables)

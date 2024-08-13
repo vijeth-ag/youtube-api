@@ -14,8 +14,7 @@ from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
-# engine = create_engine("mysql+pymysql://user:password@db:3306/youtube_api_db", echo=True)
-engine = create_engine("mysql+pymysql://user:password@127.0.0.1:3306/youtube_api_db", echo=True)
+engine = create_engine("mysql+pymysql://user:password@db:3306/youtube_api_db", echo=True)
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -92,7 +91,7 @@ class Comment(Base):
 
     comment_id = Column("comment_id", VARCHAR(255), primary_key=True)
     video_id = Column("video_id", VARCHAR(255), ForeignKey("Video.video_id"))
-    comment_text = Column("comment_text", String(255))
+    comment_text = Column("comment_text", String(10000))
     comment_author = Column("comment_author", VARCHAR(255))
     comment_published_date = Column("comment_published_date", DATETIME)
 
